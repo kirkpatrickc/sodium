@@ -13,7 +13,12 @@
 #include <libkern/OSAtomic.h>
 #elif defined(__TI_COMPILER_VERSION__)
 #else
+#ifdef _MSC_VER
+
+#include <atomic>
+#else
 #include <pthread.h>
+#endif
 #endif
 #include <stdint.h>
 #include <limits.h>
@@ -33,6 +38,20 @@ namespace sodium {
             }
             inline void unlock() {
                 OSSpinLockUnlock(&sl);
+            }
+
+#elif defined(_MSC_VER)
+
+			std::atomic_flag locked;
+            spin_lock() {
+				locked.clear();
+            }
+
+            inline void lock() {
+				while (locked.test_and_set(std::memory_order_acquire)) { ; }
+            }
+            inline void unlock() {
+				locked.clear(std::memory_order_release);
             }
 #else
             bool initialized;
@@ -56,18 +75,19 @@ namespace sodium {
 		#else
 			#define SODIUM_IMPL_LOCK_POOL_BITS 7
         #endif
-        extern spin_lock lock_pool[1<<SODIUM_IMPL_LOCK_POOL_BITS];
+        extern impl::spin_lock lock_pool[1<<SODIUM_IMPL_LOCK_POOL_BITS];
 
         // Use Knuth's integer hash function ("The Art of Computer Programming", section 6.4)
-        inline spin_lock* spin_get_and_lock(void* addr)
+        inline impl::spin_lock* spin_get_and_lock(void* addr)
         {
 #if defined(SODIUM_SINGLE_THREADED)
         	return &lock_pool[0];
 #else
-            spin_lock* l = &lock_pool[(uint32_t)((uint32_t)
-	#if __WORDSIZE == 32
+	        impl::spin_lock* l = &lock_pool[(uint32_t)((uint32_t)
+
+	#if _WIN32 || __WORDSIZE == 32
                 (addr)
-	#elif __WORDSIZE == 64
+	#elif _WIN64 || __WORDSIZE == 64
                 (uint64_t)(addr)
 	#else
 	#error This architecture is not supported
