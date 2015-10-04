@@ -66,6 +66,11 @@ namespace sodium {
     }
 
 #if !defined(SODIUM_SINGLE_THREADED)
+#ifdef _MSC_VER
+    mutex::mutex() { }
+
+    mutex::~mutex() { }
+#else
     mutex::mutex()
     {
         pthread_mutexattr_t attr;
@@ -79,20 +84,29 @@ namespace sodium {
         pthread_mutex_destroy(&mx);
     }
 #endif
+#endif
 
     partition::partition()
         : depth(0),
           processing_post(false)
     {
 #if !defined(SODIUM_SINGLE_THREADED)
-        pthread_key_create(&key, NULL);
+#ifdef _MSC_VER
+		key.reset(nullptr);
+#else
+       pthread_key_create(&key, NULL);
+#endif
+
 #endif
     }
 
     partition::~partition()
     {
 #if !defined(SODIUM_SINGLE_THREADED)
+#ifdef _MSC_VER
+#else
         pthread_key_delete(key);
+#endif
 #endif
     }
 
@@ -401,7 +415,11 @@ namespace sodium {
 #if defined(SODIUM_SINGLE_THREADED)
     	return global_transaction;
 #else
+#ifdef _MSC_VER
+		return *part->key.get();
+#else
         return reinterpret_cast<impl::transaction_impl*>(pthread_getspecific(part->key));
+#endif
 #endif
     }
 
@@ -411,7 +429,11 @@ namespace sodium {
         global_transaction = impl;
 #else
         impl->part->mx.lock();
+#ifdef _MSC_VER
+		impl->part->key.reset(&impl);
+#else
         pthread_setspecific(impl->part->key, impl);
+#endif
 #endif
     }
 
@@ -428,7 +450,7 @@ namespace sodium {
 #if defined(SODIUM_SINGLE_THREADED)
         global_transaction = NULL;
 #else
-        pthread_setspecific(impl->part->key, NULL);
+        // CK pthread_setspecific(impl->part->key, NULL);
         impl->part->mx.unlock();
 #endif
         post();  // note: deletes 'impl'

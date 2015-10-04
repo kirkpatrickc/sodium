@@ -21,7 +21,12 @@
 #ifdef __linux
 #include <pthread.h>
 #else
+#ifdef _MSC_VER
+#include <boost/thread/tss.hpp>
+#include <mutex>
+#else
 #include <pthread/pthread.h>
+#endif
 #endif
 #if defined(SODIUM_NO_CXX11)
 #include <boost/shared_ptr.hpp>
@@ -123,6 +128,28 @@ namespace sodium {
 #endif
 
 #if !defined(SODIUM_SINGLE_THREADED)
+
+#ifdef _MSC_VER
+    class mutex
+    {
+    private:
+        std::recursive_mutex mx;
+        // ensure we don't copy or assign a mutex by value
+        mutex(const mutex& other) {}
+        mutex& operator = (const mutex& other) { return *this; }
+    public:
+        mutex();
+        ~mutex();
+        void lock()
+        {
+			mx.lock();
+        }
+        void unlock()
+        {
+			mx.unlock();
+        }
+    };
+#else
     class mutex
     {
     private:
@@ -143,6 +170,14 @@ namespace sodium {
         }
     };
 #endif
+#endif
+
+#ifdef _MSC_VER
+
+		namespace impl {
+			struct transaction_impl;
+		};
+#endif
 
     struct partition {
         partition();
@@ -152,7 +187,11 @@ namespace sodium {
 #endif
         int depth;
 #if !defined(SODIUM_SINGLE_THREADED)
+#ifdef _MSC_VER
+		boost::thread_specific_ptr<impl::transaction_impl*> key;
+#else
         pthread_key_t key;
+#endif
 #endif
         bool processing_post;
 #if defined(SODIUM_NO_CXX11)

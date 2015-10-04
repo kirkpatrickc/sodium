@@ -66,12 +66,14 @@ namespace SODIUM_NAMESPACE {
             magic_ref(const A& a) : r(new receptacle<A>) {
                 assign(a);
             }
+
             magic_ref(const magic_ref<A>& other) {
                 link::lock.lock();
                 r = other.r;
                 r->increment();
                 link::lock.unlock();
             }
+
             ~magic_ref() {
                 link::lock.lock();
                 r->decrement();

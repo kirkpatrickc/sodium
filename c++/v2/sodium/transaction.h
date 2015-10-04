@@ -11,6 +11,7 @@
 #include <sodium/impl/magic_ref.h>
 #include <stdint.h>
 #include <memory>
+#include <vector>
 
 namespace SODIUM_NAMESPACE {
     class transaction;

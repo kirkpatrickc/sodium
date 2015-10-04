@@ -8,10 +8,41 @@
 #define _SODIUM2_IMPL_MUTEX_H_
 
 #include <sodium/impl/common.h>
+
+#ifdef _MSC_VER
+#include <mutex>
+#else
 #include <pthread.h>
+#endif
 
 namespace SODIUM_NAMESPACE {
     namespace impl {
+
+#ifdef _MSC_VER
+    class mutex
+    {
+
+	public:
+        // ensure we don't copy or assign a mutex by value
+		mutex(const mutex& other) = delete;
+		mutex& operator = (const mutex& other) = delete;
+
+    private:
+        std::recursive_mutex mx;
+
+    public:
+        mutex();
+        ~mutex();
+        void lock()
+        {
+			mx.lock();
+        }
+        void unlock()
+        {
+			mx.unlock();
+        }
+    };
+#else
         class mutex
         {
         private:
@@ -31,7 +62,9 @@ namespace SODIUM_NAMESPACE {
                 pthread_mutex_unlock(&mx);
             }
         };
+#endif
      }
 }
 
 #endif
+

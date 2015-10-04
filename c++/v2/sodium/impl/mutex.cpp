@@ -8,6 +8,12 @@
 
 namespace sodium {
     namespace impl {
+
+#ifdef _MSC_VER
+    mutex::mutex() { }
+
+    mutex::~mutex() { }
+#else
         mutex::mutex()
         {
             pthread_mutexattr_t attr;
@@ -20,5 +26,6 @@ namespace sodium {
         {
             pthread_mutex_destroy(&mx);
         }
+#endif
     }
 }
