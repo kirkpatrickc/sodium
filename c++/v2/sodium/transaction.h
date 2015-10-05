@@ -17,8 +17,8 @@ namespace SODIUM_NAMESPACE {
     class transaction;
     template <class A> class stream;
     template <class A> class stream_with_send;
-    template <class A> class stream_sink;
-    template <class A> class stream_loop;
+    template <class A> struct stream_sink;
+    template <class A> struct stream_loop;
     template <class A> class cell;
 
     namespace impl {
@@ -101,8 +101,8 @@ namespace SODIUM_NAMESPACE {
     friend class impl::transaction_impl;
     template <class A> friend class sodium::stream;
     template <class A> friend class sodium::stream_with_send;
-    template <class A> friend class sodium::stream_sink;
-    template <class A> friend class sodium::stream_loop;
+    template <class A> friend struct sodium::stream_sink;
+    template <class A> friend struct sodium::stream_loop;
     template <class A> friend class sodium::cell;
     private:
         std::shared_ptr<impl::transaction_impl> impl;
